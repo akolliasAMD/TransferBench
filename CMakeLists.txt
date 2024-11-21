@@ -36,7 +36,9 @@ set(DEFAULT_GPUS
       gfx1030
       gfx1100
       gfx1101
-      gfx1102)
+      gfx1102
+      gfx1200
+      gfx1201)
 
 # Build only for local GPU architecture
 if (BUILD_LOCAL_GPU_TARGET_ONLY)
