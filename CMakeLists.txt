@@ -9,6 +9,23 @@ cmake_minimum_required(VERSION 3.5)
 
 project(TransferBench VERSION 1.54.0 LANGUAGES CXX)
 
+
+set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -L${ROCM_PATH}/lib")
+include_directories(${ROCM_PATH}/include)
+link_libraries(numa hsa-runtime64 pthread)
+set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ..)
+add_executable(TransferBench src/TransferBench.cpp)
+target_include_directories(TransferBench PRIVATE src/include)
+
+find_package(ROCM 0.8 REQUIRED PATHS ${ROCM_PATH})
+include(ROCMInstallTargets)
+include(ROCMCreatePackage)
+set(ROCMCHECKS_WARN_TOOLCHAIN_VAR OFF)
+
+set(PACKAGE_NAME TB)
+set(LIBRARY_NAME TransferBench)
+
+rocm_install(TARGETS TransferBench COMPONENT devel)
 # Default GPU architectures to build
 #==================================================================================================
 set(DEFAULT_GPUS
@@ -19,9 +36,7 @@ set(DEFAULT_GPUS
       gfx1030
       gfx1100
       gfx1101
-      gfx1102
-      gfx1200
-      gfx1201)
+      gfx1102)
 
 # Build only for local GPU architecture
 if (BUILD_LOCAL_GPU_TARGET_ONLY)
@@ -48,11 +63,12 @@ endif()
 set(GPU_TARGETS "${SUPPORTED_GPUS}" CACHE STRING "GPU targets to compile for.")
 message(STATUS "Compiling for ${GPU_TARGETS}")
 
-
-foreach(GPU_TARGET ${GPU_TARGETS})
-  target_compile_options(TransferBench PUBLIC --offload-arch=${GPU_TARGET})
-  target_link_options(TransferBench PUBLIC --offload-arch=${GPU_TARGET})
+foreach(target ${GPU_TARGETS})
+ list(APPEND static_link_flags --offload-arch=${target})
 endforeach()
+list(JOIN static_link_flags " " flags_str)
+set( CMAKE_CXX_FLAGS "${flags_str}${CMAKE_CXX_FLAGS}")
+
 
 set( CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 --std=c++20 -L${ROCM_PATH}/lib")
 
@@ -71,6 +87,7 @@ set(PACKAGE_NAME TB)
 set(LIBRARY_NAME TransferBench)
 
 rocm_install(TARGETS TransferBench COMPONENT devel)
+set( CMAKE_CXX_FLAGS "${flags_str}${CMAKE_CXX_FLAGS}")
 
 rocm_package_add_dependencies(DEPENDS numactl hsa-rocr)
 
